@@ -1,8 +1,8 @@
 package P2SmithK;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Random;
+import java.util.*;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class P2SmithK {
 
@@ -32,6 +32,8 @@ public class P2SmithK {
         int dpRandom = knapsackDP(randomItems, randomCapacity);
         int greedyRandom = greedyByRatio(randomItems, randomCapacity);
         System.out.println("\n[Random Test] DP Value: " + dpRandom + ", Greedy by Ratio: " + greedyRandom);
+        
+        runGraphingTests();
     }
 
     // Test Case 1
@@ -151,4 +153,124 @@ public class P2SmithK {
             System.out.println("Item " + (i + 1) + ": " + items[i]);
         }
     }
+    
+    public static void writeCSV(String fileName, String header, List<String[]> rows) {
+    try (FileWriter writer = new FileWriter(fileName)) {
+        writer.write(header + "\n");
+        for (String[] row : rows) {
+            writer.write(String.join(",", row) + "\n");
+        }
+        System.out.println("Saved: " + fileName);
+    } catch (IOException e) {
+        System.err.println("Error writing " + fileName + ": " + e.getMessage());
+    }
+}
+    
+public static void runGraphingTests() {
+    int[] itemCounts = {10, 20, 50, 100, 200};
+    int[] capacities = {20, 50, 100, 200, 300};
+    int fixedCapacity = 100;
+    int fixedItemCount = 100;
+    Random rand = new Random();
+    final int REPEAT = 100;
+
+    // Store rows for CSV export
+    List<String[]> qualityItemRows = new ArrayList<>();
+    List<String[]> qualityCapRows = new ArrayList<>();
+    List<String[]> timeItemRows = new ArrayList<>();
+    List<String[]> timeCapRows = new ArrayList<>();
+
+    // --- QUALITY VS ITEM COUNT ---
+    for (int n : itemCounts) {
+        Item[] items = new Item[n];
+        for (int i = 0; i < n; i++) {
+            int w = rand.nextInt(50) + 1;
+            int v = rand.nextInt(100) + 1;
+            items[i] = new Item(w, v);
+        }
+        int dp = knapsackDP(items, fixedCapacity);
+        int gv = greedyByValue(items, fixedCapacity);
+        int gr = greedyByRatio(items, fixedCapacity);
+        qualityItemRows.add(new String[]{String.valueOf(n), String.valueOf(dp), String.valueOf(gv), String.valueOf(gr)});
+    }
+
+    // --- QUALITY VS CAPACITY ---
+    Item[] fixedItems = new Item[fixedItemCount];
+    for (int i = 0; i < fixedItemCount; i++) {
+        int w = rand.nextInt(50) + 1;
+        int v = rand.nextInt(100) + 1;
+        fixedItems[i] = new Item(w, v);
+    }
+    for (int cap : capacities) {
+        int dp = knapsackDP(fixedItems, cap);
+        int gv = greedyByValue(fixedItems, cap);
+        int gr = greedyByRatio(fixedItems, cap);
+        qualityCapRows.add(new String[]{String.valueOf(cap), String.valueOf(dp), String.valueOf(gv), String.valueOf(gr)});
+    }
+
+    // --- TIME VS ITEM COUNT (microseconds) ---
+    for (int n : itemCounts) {
+        Item[] items = new Item[n];
+        for (int i = 0; i < n; i++) {
+            int w = rand.nextInt(50) + 1;
+            int v = rand.nextInt(100) + 1;
+            items[i] = new Item(w, v);
+        }
+
+        long dpTotal = 0, gvTotal = 0, grTotal = 0;
+
+        for (int i = 0; i < REPEAT; i++) {
+            long start = System.nanoTime();
+            knapsackDP(items, fixedCapacity);
+            dpTotal += (System.nanoTime() - start);
+
+            start = System.nanoTime();
+            greedyByValue(items, fixedCapacity);
+            gvTotal += (System.nanoTime() - start);
+
+            start = System.nanoTime();
+            greedyByRatio(items, fixedCapacity);
+            grTotal += (System.nanoTime() - start);
+        }
+
+        long dpTime = dpTotal / REPEAT / 1_000;
+        long gvTime = gvTotal / REPEAT / 1_000;
+        long grTime = grTotal / REPEAT / 1_000;
+
+        timeItemRows.add(new String[]{String.valueOf(n), String.valueOf(dpTime), String.valueOf(gvTime), String.valueOf(grTime)});
+    }
+
+    // --- TIME VS CAPACITY (microseconds) ---
+    for (int cap : capacities) {
+        long dpTotal = 0, gvTotal = 0, grTotal = 0;
+
+        for (int i = 0; i < REPEAT; i++) {
+            long start = System.nanoTime();
+            knapsackDP(fixedItems, cap);
+            dpTotal += (System.nanoTime() - start);
+
+            start = System.nanoTime();
+            greedyByValue(fixedItems, cap);
+            gvTotal += (System.nanoTime() - start);
+
+            start = System.nanoTime();
+            greedyByRatio(fixedItems, cap);
+            grTotal += (System.nanoTime() - start);
+        }
+
+        long dpTime = dpTotal / REPEAT / 1_000;
+        long gvTime = gvTotal / REPEAT / 1_000;
+        long grTime = grTotal / REPEAT / 1_000;
+
+        timeCapRows.add(new String[]{String.valueOf(cap), String.valueOf(dpTime), String.valueOf(gvTime), String.valueOf(grTime)});
+    }
+
+    // --- Write CSV files ---
+    writeCSV("quality_vs_items.csv", "ItemCount,DP,GreedyValue,GreedyRatio", qualityItemRows);
+    writeCSV("quality_vs_capacity.csv", "Capacity,DP,GreedyValue,GreedyRatio", qualityCapRows);
+    writeCSV("time_vs_items.csv", "ItemCount,DP_Time,GreedyValue_Time,GreedyRatio_Time", timeItemRows);
+    writeCSV("time_vs_capacity.csv", "Capacity,DP_Time,GreedyValue_Time,GreedyRatio_Time", timeCapRows);
+}
+
+
 }

@@ -1,0 +1,6 @@
+Capacity,DP_Time,GreedyValue_Time,GreedyRatio_Time
+20,28,87,87
+50,69,72,75
+100,64,99,106
+200,100,93,90
+300,129,76,78

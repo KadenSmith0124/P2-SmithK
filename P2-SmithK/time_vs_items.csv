@@ -1,0 +1,6 @@
+ItemCount,DP_Time,GreedyValue_Time,GreedyRatio_Time
+10,14,7,4
+20,36,9,6
+50,156,41,29
+100,144,43,28
+200,155,113,83
